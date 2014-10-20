@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Threading;
 using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
+using System.Collections.Generic;
+
 
 namespace HttpProxy
 {
@@ -13,6 +16,7 @@ namespace HttpProxy
         public WebProxy()
         {
             lastRequest = string.Empty;
+            clients = new List<Socket>();
         }
         public void Start(IPAddress ip, int port)
         {
@@ -28,36 +32,50 @@ namespace HttpProxy
                 listener.Bind(ipEndPoint);
                 listener.Listen(10);
 
-                listener.BeginAccept(new AsyncCallback(this.AcceptConnection), listener);
+                listener.BeginAccept(new AsyncCallback(this.AcceptConnection), null); // listener);
             }
             catch (Exception exc)
             {
-                //MessageBox.Show(exc.ToString());
+                lastException = exc.ToString();
+                OnExceptionThrown();
             }
         }
         public void Stop()
         {
             try
             {
-                if (listener.Connected)
+                listener.Shutdown(SocketShutdown.Both);
+                listener.Close();
+
+                foreach (Socket handler in clients)
                 {
-                    listener.Shutdown(SocketShutdown.Both);
-                    listener.Close();
+                    handler.Shutdown(SocketShutdown.Both);
+                    handler.Close();
                 }
+
+                clients.Clear();
             }
             catch (Exception exc)
             {
-                //MessageBox.Show(exc.ToString());
+                lastException = exc.ToString();
+                OnExceptionThrown();
+                //continue;
             }
         }
         public string LastRequest
         {
             get { return lastRequest; }
         }
+        public string LastException
+        {
+            get { return lastException; }
+        }
 
         public event WebEvent ConnectionEstablished;
         public event WebEvent ConnectionEnd;
-        public event WebEvent DataReceived;
+        public event WebEvent RequestReceived;
+        public event WebEvent ResponseReceived;
+        public event WebEvent ExceptionThrown;
 
         protected virtual void OnConnectionEstablished()
         {
@@ -69,114 +87,130 @@ namespace HttpProxy
             if (ConnectionEnd != null)
                 ConnectionEnd(this);
         }
-        protected virtual void OnDataReceived()
+        protected virtual void OnRequestReceived()
         {
-            if (DataReceived != null)
-                DataReceived(this);
+            if (RequestReceived != null)
+                RequestReceived(this);
+        }
+        protected virtual void OnResponseReceived()
+        {
+            if (ResponseReceived != null)
+                ResponseReceived(this);
+        }
+        protected virtual void OnExceptionThrown()
+        {
+            if (ExceptionThrown != null)
+                ExceptionThrown(this);
         }
 
         private string lastRequest;
+        private string lastException;
         private Socket listener;
+        private List<Socket> clients;
         private IPAddress localAddress;
 
-        //private Socket handler;
-
-        private Socket GetProxySocket(string hostname, int portnumber = 80)
+        private Socket CreateWebSocket(string hostname, int portnumber = 80)
         {
             SocketPermission permission = new SocketPermission(NetworkAccess.Connect, TransportType.Tcp, "", SocketPermission.AllPorts);
-            Socket proxy = new Socket(localAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            Socket webHandler = new Socket(localAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
             permission.Demand();
-            proxy.Connect(hostname, portnumber);
-
-            return proxy;
+            webHandler.Connect(hostname, portnumber);
+            return webHandler;
         }
-
         private void AcceptConnection(IAsyncResult ar)
         {
             try
             {
-                Socket listener = (Socket)ar.AsyncState;
-                Socket handler = listener.EndAccept(ar);
+                //Socket listener = (Socket)ar.AsyncState;
+                Socket clientHandler = listener.EndAccept(ar);
+                clients.Add(clientHandler);
+
                 OnConnectionEstablished();
+                
+                byte[] buffer = new byte[1048576];
 
-                byte[] buffer = new byte[16777216];
-                object[] obj = new object[2];
-                obj[0] = buffer;
-                obj[1] = handler;
-
-                handler.BeginReceive(
-                        buffer,                                 // An array of type bytes for received data 
-                        0,                                      // Posistion in buffer to receive data  
-                        buffer.Length,                          // Maximum nuber of bytes receivable (buffer size)
-                        SocketFlags.None,                       // Specifies send and receive behavior
-                        new AsyncCallback(ReceiveData),         // An AsyncCallback delegate 
-                        obj                                     // Specifies infomation for receive operation 
-                        );
-
-                listener.BeginAccept(new AsyncCallback(AcceptConnection), listener);
+                clientHandler.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveRequests), new object[] {buffer, clientHandler});
+                listener.BeginAccept(new AsyncCallback(AcceptConnection), null); // listener);
             }
             catch (Exception exc)
             {
-                //MessageBox.Show(exc.ToString());
+                lastException = exc.ToString();
+                OnExceptionThrown();
             }
         }
-        private void ReceiveData(IAsyncResult ar)
+        private void ReceiveResponses(IAsyncResult ar)
         {
             try
             {
-                object[] obj = (object[])ar.AsyncState;
-                byte[] buffer = (byte[])obj[0];
-                Socket handler = (Socket)obj[1];
+                byte[] buffer = (byte[])((object[])ar.AsyncState)[0];
+                Socket wHandler = (Socket)((object[])ar.AsyncState)[1];
+                Socket cHandler = (Socket)((object[])ar.AsyncState)[2];
 
-                int bytesRead = handler.EndReceive(ar);
+                int bytesRead = wHandler.EndReceive(ar);
 
-                if (bytesRead > 0 && handler.LocalEndPoint.ToString() == listener.LocalEndPoint.ToString())
+                while (bytesRead > 0)
+                {
+                    cHandler.Send(buffer, 0, bytesRead, SocketFlags.None);
+                    bytesRead = wHandler.Receive(buffer);
+                }
+
+                OnResponseReceived();
+
+                wHandler.Shutdown(SocketShutdown.Both);
+                wHandler.Close();
+            }
+            catch (Exception exc)
+            {
+                lastException = exc.ToString();
+                OnExceptionThrown();
+            }
+        }
+        private void ReceiveRequests(IAsyncResult ar)
+        {
+            try
+            {
+                byte[] buffer = (byte[])((object[])ar.AsyncState)[0];
+                Socket cHandler = (Socket)((object[])ar.AsyncState)[1];
+
+                int bytesRead = cHandler.EndReceive(ar);
+
+                if (bytesRead > 0) // && handler.LocalEndPoint.ToString() == listener.LocalEndPoint.ToString())
                 {
                     String pattern1 = @"Host: ([^:]*?)\r\n";
                     String pattern2 = @"Host: (.*?):([\d]{1,5})\r\n";
                     Regex hostParser = new Regex(pattern1);
-                    Socket proxy;
+                    Socket wHandler;
                     String host;
                     int port;
 
                     lastRequest = Encoding.ASCII.GetString(buffer, 0, bytesRead);
-                    OnDataReceived();
+                    OnRequestReceived();
 
                     if (hostParser.IsMatch(lastRequest))
                     {
                         host = hostParser.Match(lastRequest).Groups[1].Value;
-                        proxy = GetProxySocket(host);
+                        wHandler = CreateWebSocket(host);
                     }
                     else
                     {
                         Regex hostAndPortParser = new Regex(pattern2);
                         host = hostAndPortParser.Match(lastRequest).Groups[1].Value;
                         port = int.Parse(hostAndPortParser.Match(lastRequest).Groups[2].Value);
-                        proxy = GetProxySocket(host, port);
+                        wHandler = CreateWebSocket(host, port);
                     }
 
-                    proxy.Send(buffer, bytesRead, SocketFlags.None);
+                    wHandler.Send(buffer, bytesRead, SocketFlags.None);
+                    wHandler.BeginReceive(buffer, 0,  buffer.Length,SocketFlags.None, new AsyncCallback(ReceiveResponses), new object[] { buffer, wHandler, cHandler, 5 });
 
-                    bytesRead = proxy.Receive(buffer);
-                    handler.BeginSend(buffer, 0, bytesRead, 0, new AsyncCallback(SendData), handler);
-
-                    while (proxy.Available > 0)
-                    {
-                        bytesRead = proxy.Receive(buffer);
-                        handler.BeginSend(buffer, 0, bytesRead, 0, new AsyncCallback(SendData), handler);
-                    }
-
-                    byte[] buffernew = new byte[16777216];
-                    obj[0] = buffernew;
-                    obj[1] = handler;
-
-                    handler.BeginReceive(buffernew, 0, buffernew.Length, SocketFlags.None, new AsyncCallback(ReceiveData), obj);
+                    byte[] buffernew = new byte[1048576];
+                    cHandler.BeginReceive(buffernew, 0, buffernew.Length, SocketFlags.None, new AsyncCallback(ReceiveRequests), new object[] { buffernew, cHandler });
                 }
             }
             catch (Exception exc)
             {
-                //MessageBox.Show(exc.ToString());
+                lastException = exc.ToString();
+                OnExceptionThrown();
             }
         }
         private void SendData(IAsyncResult ar)
@@ -188,7 +222,8 @@ namespace HttpProxy
             }
             catch (Exception exc)
             {
-                //MessageBox.Show(exc.ToString());
+                lastException = exc.ToString();
+                OnExceptionThrown();
             }
         }
     }
