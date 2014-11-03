@@ -44,7 +44,7 @@
             // ButtonProxyStart
             // 
             this.ButtonProxyStart.Location = new System.Drawing.Point(296, 844);
-            this.ButtonProxyStart.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.ButtonProxyStart.Margin = new System.Windows.Forms.Padding(4);
             this.ButtonProxyStart.Name = "ButtonProxyStart";
             this.ButtonProxyStart.Size = new System.Drawing.Size(240, 127);
             this.ButtonProxyStart.TabIndex = 0;
@@ -56,7 +56,7 @@
             // 
             this.ButtonProxyEnd.Enabled = false;
             this.ButtonProxyEnd.Location = new System.Drawing.Point(544, 844);
-            this.ButtonProxyEnd.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.ButtonProxyEnd.Margin = new System.Windows.Forms.Padding(4);
             this.ButtonProxyEnd.Name = "ButtonProxyEnd";
             this.ButtonProxyEnd.Size = new System.Drawing.Size(240, 127);
             this.ButtonProxyEnd.TabIndex = 1;
@@ -67,7 +67,7 @@
             // PortBox
             // 
             this.PortBox.Location = new System.Drawing.Point(148, 13);
-            this.PortBox.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
+            this.PortBox.Margin = new System.Windows.Forms.Padding(6);
             this.PortBox.Maximum = new decimal(new int[] {
             65535,
             0,
@@ -91,7 +91,7 @@
             this.PropertiesPanel.Controls.Add(this.PortLabel);
             this.PropertiesPanel.Controls.Add(this.PortBox);
             this.PropertiesPanel.Location = new System.Drawing.Point(16, 844);
-            this.PropertiesPanel.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
+            this.PropertiesPanel.Margin = new System.Windows.Forms.Padding(6);
             this.PropertiesPanel.Name = "PropertiesPanel";
             this.PropertiesPanel.Size = new System.Drawing.Size(262, 125);
             this.PropertiesPanel.TabIndex = 4;
@@ -110,7 +110,7 @@
             // 
             this.Devices.FormattingEnabled = true;
             this.Devices.Location = new System.Drawing.Point(46, 63);
-            this.Devices.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
+            this.Devices.Margin = new System.Windows.Forms.Padding(6);
             this.Devices.Name = "Devices";
             this.Devices.Size = new System.Drawing.Size(204, 33);
             this.Devices.TabIndex = 6;
@@ -128,7 +128,7 @@
             // richTextBox1
             // 
             this.richTextBox1.Location = new System.Drawing.Point(16, 16);
-            this.richTextBox1.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
+            this.richTextBox1.Margin = new System.Windows.Forms.Padding(6);
             this.richTextBox1.Name = "richTextBox1";
             this.richTextBox1.ReadOnly = true;
             this.richTextBox1.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.ForcedVertical;
@@ -139,7 +139,7 @@
             // richTextBox2
             // 
             this.richTextBox2.Location = new System.Drawing.Point(16, 432);
-            this.richTextBox2.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
+            this.richTextBox2.Margin = new System.Windows.Forms.Padding(6);
             this.richTextBox2.Name = "richTextBox2";
             this.richTextBox2.ReadOnly = true;
             this.richTextBox2.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.ForcedVertical;
@@ -157,9 +157,9 @@
             this.Controls.Add(this.PropertiesPanel);
             this.Controls.Add(this.ButtonProxyEnd);
             this.Controls.Add(this.ButtonProxyStart);
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "Form1";
-            this.Text = "HTTP Proxy - GUI";
+            this.Text = "HTTP Proxy";
             this.ResizeEnd += new System.EventHandler(this.Form1_Resize);
             ((System.ComponentModel.ISupportInitialize)(this.PortBox)).EndInit();
             this.PropertiesPanel.ResumeLayout(false);

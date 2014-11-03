@@ -27,6 +27,7 @@ namespace Proxy_Project
             http_proxy = new HttpProxy.WebProxy();
             http_proxy.RequestReceived += DisplayRequest;
             http_proxy.ExceptionThrown += DisplayException;
+            http_proxy.ConnectionEstablished += DisplayClients;
             numExceptions = 0;
 
             var result = from ip in hostInfo.AddressList
@@ -52,6 +53,15 @@ namespace Proxy_Project
             else
                 richTextBox2.Text = String.Format("Exceptions: {0}\n", ++numExceptions) + sender.LastException;
         }
+        private void DisplayClients(HttpProxy.WebProxy sender)
+        {
+            if (this.InvokeRequired)
+                this.Invoke((MethodInvoker)delegate() { DisplayClients(sender); });
+
+            else
+                this.Text = "HTTP Proxy (" + sender.ConnectedClients.ToString() + ")";
+        }
+
         private void ButtonProxyStart_Click(object sender, EventArgs e)
         {
             http_proxy.Start((IPAddress) Devices.SelectedItem, (int) PortBox.Value);
@@ -68,7 +78,6 @@ namespace Proxy_Project
             ButtonProxyStart.Enabled = true;
             PropertiesPanel.Enabled = true;
         }
-
         private void Form1_Resize(object sender, EventArgs e)
         {
             System.Drawing.Size NewSize = this.ClientSize;

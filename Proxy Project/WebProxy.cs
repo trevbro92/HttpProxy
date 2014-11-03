@@ -17,6 +17,7 @@ namespace HttpProxy
         {
             lastRequest = string.Empty;
             clients = new List<Socket>();
+            serverRunning = false;
         }
         public void Start(IPAddress ip, int port)
         {
@@ -32,6 +33,7 @@ namespace HttpProxy
                 listener.Bind(ipEndPoint);
                 listener.Listen(10);
 
+                serverRunning = true;
                 listener.BeginAccept(new AsyncCallback(this.AcceptConnection), null); // listener);
             }
             catch (Exception exc)
@@ -42,15 +44,20 @@ namespace HttpProxy
         }
         public void Stop()
         {
+            serverRunning = false;
             try
             {
-                listener.Shutdown(SocketShutdown.Both);
+                if (listener.Connected)
+                    listener.Shutdown(SocketShutdown.Both);
+
                 listener.Close();
+                listener = null;
 
                 foreach (Socket handler in clients)
                 {
-                    handler.Shutdown(SocketShutdown.Both);
-                    handler.Close();
+                    if(handler.Connected)
+                        handler.Shutdown(SocketShutdown.Both);
+                    handler.Close(5);
                 }
 
                 clients.Clear();
@@ -59,7 +66,6 @@ namespace HttpProxy
             {
                 lastException = exc.ToString();
                 OnExceptionThrown();
-                //continue;
             }
         }
         public string LastRequest
@@ -69,6 +75,10 @@ namespace HttpProxy
         public string LastException
         {
             get { return lastException; }
+        }
+        public int ConnectedClients
+        {
+            get { return clients.Count; }
         }
 
         public event WebEvent ConnectionEstablished;
@@ -103,11 +113,12 @@ namespace HttpProxy
                 ExceptionThrown(this);
         }
 
-        private string lastRequest;
-        private string lastException;
         private Socket listener;
         private List<Socket> clients;
         private IPAddress localAddress;
+        private string lastRequest;
+        private string lastException;
+        private bool serverRunning;
 
         private Socket CreateWebSocket(string hostname, int portnumber = 80)
         {
@@ -120,110 +131,106 @@ namespace HttpProxy
         }
         private void AcceptConnection(IAsyncResult ar)
         {
-            try
+            if (serverRunning)
             {
-                //Socket listener = (Socket)ar.AsyncState;
-                Socket clientHandler = listener.EndAccept(ar);
-                clients.Add(clientHandler);
+                try
+                {
+                    Socket clientHandler = listener.EndAccept(ar);
+                    clients.Add(clientHandler);
 
-                OnConnectionEstablished();
-                
-                byte[] buffer = new byte[1048576];
+                    OnConnectionEstablished();
 
-                clientHandler.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveRequests), new object[] {buffer, clientHandler});
-                listener.BeginAccept(new AsyncCallback(AcceptConnection), null); // listener);
-            }
-            catch (Exception exc)
-            {
-                lastException = exc.ToString();
-                OnExceptionThrown();
-            }
+                    byte[] buffer = new byte[1048576];
+
+                    clientHandler.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveRequests), new object[] { buffer, clientHandler });
+                    listener.BeginAccept(new AsyncCallback(AcceptConnection), null);
+                }
+                catch (Exception exc)
+                {
+                    lastException = exc.ToString();
+                    OnExceptionThrown();
+                }
+            }          
         }
         private void ReceiveResponses(IAsyncResult ar)
         {
-            try
+            if (serverRunning)
             {
-                byte[] buffer = (byte[])((object[])ar.AsyncState)[0];
-                Socket wHandler = (Socket)((object[])ar.AsyncState)[1];
-                Socket cHandler = (Socket)((object[])ar.AsyncState)[2];
-
-                int bytesRead = wHandler.EndReceive(ar);
-
-                while (bytesRead > 0)
+                try
                 {
-                    cHandler.Send(buffer, 0, bytesRead, SocketFlags.None);
-                    bytesRead = wHandler.Receive(buffer);
+                    byte[] buffer = (byte[])((object[])ar.AsyncState)[0];
+                    Socket wHandler = (Socket)((object[])ar.AsyncState)[1];
+                    Socket cHandler = (Socket)((object[])ar.AsyncState)[2];
+
+                    int bytesRead = wHandler.EndReceive(ar);
+
+                    while (bytesRead > 0 && cHandler.Connected)
+                    {
+                        cHandler.Send(buffer, 0, bytesRead, SocketFlags.None);
+                        bytesRead = wHandler.Receive(buffer);
+                    }
+
+                    OnResponseReceived();
+
+                    wHandler.Shutdown(SocketShutdown.Both);
+                    wHandler.Close();
                 }
-
-                OnResponseReceived();
-
-                wHandler.Shutdown(SocketShutdown.Both);
-                wHandler.Close();
-            }
-            catch (Exception exc)
-            {
-                lastException = exc.ToString();
-                OnExceptionThrown();
+                catch (Exception exc)
+                {
+                    lastException = exc.ToString();
+                    OnExceptionThrown();
+                }
             }
         }
         private void ReceiveRequests(IAsyncResult ar)
         {
-            try
+            if (serverRunning)
             {
-                byte[] buffer = (byte[])((object[])ar.AsyncState)[0];
-                Socket cHandler = (Socket)((object[])ar.AsyncState)[1];
-
-                int bytesRead = cHandler.EndReceive(ar);
-
-                if (bytesRead > 0) // && handler.LocalEndPoint.ToString() == listener.LocalEndPoint.ToString())
+                try
                 {
-                    String pattern1 = @"Host: ([^:]*?)\r\n";
-                    String pattern2 = @"Host: (.*?):([\d]{1,5})\r\n";
-                    Regex hostParser = new Regex(pattern1);
-                    Socket wHandler;
-                    String host;
-                    int port;
+                    byte[] buffer = (byte[])((object[])ar.AsyncState)[0];
+                    Socket cHandler = (Socket)((object[])ar.AsyncState)[1];
 
-                    lastRequest = Encoding.ASCII.GetString(buffer, 0, bytesRead);
-                    OnRequestReceived();
+                    int bytesRead = cHandler.EndReceive(ar);
 
-                    if (hostParser.IsMatch(lastRequest))
+                    if (bytesRead > 0)
                     {
-                        host = hostParser.Match(lastRequest).Groups[1].Value;
-                        wHandler = CreateWebSocket(host);
-                    }
-                    else
-                    {
-                        Regex hostAndPortParser = new Regex(pattern2);
-                        host = hostAndPortParser.Match(lastRequest).Groups[1].Value;
-                        port = int.Parse(hostAndPortParser.Match(lastRequest).Groups[2].Value);
-                        wHandler = CreateWebSocket(host, port);
-                    }
+                        String pattern1 = @"Host: ([^:]*?)\r\n";
+                        String pattern2 = @"Host: (.*?):([\d]{1,5})\r\n";
+                        Regex hostParser = new Regex(pattern1);
+                        Socket wHandler;
+                        String host;
+                        int port;
 
-                    wHandler.Send(buffer, bytesRead, SocketFlags.None);
-                    wHandler.BeginReceive(buffer, 0,  buffer.Length,SocketFlags.None, new AsyncCallback(ReceiveResponses), new object[] { buffer, wHandler, cHandler, 5 });
+                        lastRequest = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                        OnRequestReceived();
 
-                    byte[] buffernew = new byte[1048576];
-                    cHandler.BeginReceive(buffernew, 0, buffernew.Length, SocketFlags.None, new AsyncCallback(ReceiveRequests), new object[] { buffernew, cHandler });
+                        if (hostParser.IsMatch(lastRequest))
+                        {
+                            host = hostParser.Match(lastRequest).Groups[1].Value;
+                            wHandler = CreateWebSocket(host);
+                        }
+                        else
+                        {
+                            Regex hostAndPortParser = new Regex(pattern2);
+                            host = hostAndPortParser.Match(lastRequest).Groups[1].Value;
+                            port = int.Parse(hostAndPortParser.Match(lastRequest).Groups[2].Value);
+                            wHandler = CreateWebSocket(host, port);
+                        }
+
+                        wHandler.Send(buffer, bytesRead, SocketFlags.None);
+                        wHandler.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveResponses), new object[] { buffer, wHandler, cHandler, 5 });
+
+
+                        byte[] buffernew = new byte[1048576];
+                        cHandler.BeginReceive(buffernew, 0, buffernew.Length, SocketFlags.None, new AsyncCallback(ReceiveRequests), new object[] { buffernew, cHandler });
+                    }
                 }
-            }
-            catch (Exception exc)
-            {
-                lastException = exc.ToString();
-                OnExceptionThrown();
-            }
-        }
-        private void SendData(IAsyncResult ar)
-        {
-            try
-            {
-                Socket handler = (Socket)ar.AsyncState;
-                handler.EndSend(ar);
-            }
-            catch (Exception exc)
-            {
-                lastException = exc.ToString();
-                OnExceptionThrown();
+                catch (Exception exc)
+                {
+                    lastException = exc.ToString();
+                    OnExceptionThrown();
+                }
             }
         }
     }
