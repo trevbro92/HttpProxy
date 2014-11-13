@@ -16,7 +16,7 @@ namespace HttpProxy
         public WebProxy()
         {
             lastRequest = string.Empty;
-            clients = new List<Socket>();
+            clients = new List<ExtendedSocket>();
             serverRunning = false;
         }
         public void Start(IPAddress ip, int port)
@@ -53,11 +53,13 @@ namespace HttpProxy
                 listener.Close();
                 listener = null;
 
-                foreach (Socket handler in clients)
+                foreach (ExtendedSocket handler in clients)
                 {
-                    if(handler.Connected)
-                        handler.Shutdown(SocketShutdown.Both);
-                    handler.Close(5);
+                    handler.State(ExtendedSocket.SocketState.Closed);
+
+                    if(handler.socket.Connected)
+                        handler.socket.Shutdown(SocketShutdown.Both);
+                    handler.socket.Close(5);
                 }
 
                 clients.Clear();
@@ -79,6 +81,139 @@ namespace HttpProxy
         public int ConnectedClients
         {
             get { return clients.Count; }
+        }
+
+        struct ExtendedSocket
+        {
+            public enum SocketState { Open, Closed };
+            public Socket socket;
+            private SocketState state;
+            public void State(SocketState s)
+            { state = s; }
+            public SocketState State()
+            { return state;  }
+        }
+        private Socket listener;
+        private List<ExtendedSocket> clients;
+        private IPAddress localAddress;
+        private string lastRequest;
+        private string lastException;
+        private bool serverRunning;
+
+        private Socket CreateWebSocket(string hostname, int portnumber = 80)
+        {
+            SocketPermission permission = new SocketPermission(NetworkAccess.Connect, TransportType.Tcp, "", SocketPermission.AllPorts);
+            Socket webHandler = new Socket(localAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+
+            permission.Demand();
+            webHandler.Connect(hostname, portnumber);
+            return webHandler;
+        }
+        private void AcceptConnection(IAsyncResult ar)
+        {
+            if (serverRunning)
+            {
+                try
+                {
+                    ExtendedSocket clientHandler = new ExtendedSocket();
+                    clientHandler.socket = listener.EndAccept(ar);
+                    clientHandler.State(ExtendedSocket.SocketState.Open);
+                    clients.Add(clientHandler);
+
+                    OnConnectionEstablished();
+
+                    byte[] buffer = new byte[1048576];
+
+                    clientHandler.socket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveRequests), new object[] { buffer, clientHandler });
+                    listener.BeginAccept(new AsyncCallback(AcceptConnection), null);
+                }
+                catch (Exception exc)
+                {
+                    lastException = exc.ToString();
+                    OnExceptionThrown();
+                }
+            }          
+        }
+        private void ReceiveResponses(IAsyncResult ar)
+        {
+            byte[] buffer = (byte[])((object[])ar.AsyncState)[0];
+            Socket wHandler = (Socket)((object[])ar.AsyncState)[1];
+            ExtendedSocket cHandler = (ExtendedSocket)((object[])ar.AsyncState)[2];
+
+            if (serverRunning && cHandler.State() == ExtendedSocket.SocketState.Open)
+            {
+                try
+                {
+                    int bytesRead = wHandler.EndReceive(ar);
+
+                    while (bytesRead > 0 && cHandler.State() == ExtendedSocket.SocketState.Open)
+                    {
+                        cHandler.socket.Send(buffer, 0, bytesRead, SocketFlags.None);
+                        bytesRead = wHandler.Receive(buffer);
+                    }
+
+                    OnResponseReceived();
+
+                    wHandler.Shutdown(SocketShutdown.Both);
+                    wHandler.Close();
+                }
+                catch (Exception exc)
+                {
+                    lastException = exc.ToString();
+                    OnExceptionThrown();
+                }
+            }
+        }
+        private void ReceiveRequests(IAsyncResult ar)
+        {
+            byte[] buffer = (byte[])((object[])ar.AsyncState)[0];
+            ExtendedSocket cHandler = (ExtendedSocket)((object[])ar.AsyncState)[1];
+
+            if (serverRunning && cHandler.State() == ExtendedSocket.SocketState.Open)
+            {
+                try
+                {
+                    int bytesRead = cHandler.socket.EndReceive(ar);
+
+                    if (bytesRead > 0)
+                    {
+                        String pattern1 = @"Host: ([^:]*?)\r\n";
+                        String pattern2 = @"Host: (.*?):([\d]{1,5})\r\n";
+                        Regex hostParser = new Regex(pattern1);
+                        Socket wHandler;
+                        String host;
+                        int port;
+
+                        lastRequest = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                        OnRequestReceived();
+
+                        if (hostParser.IsMatch(lastRequest))
+                        {
+                            host = hostParser.Match(lastRequest).Groups[1].Value;
+                            wHandler = CreateWebSocket(host);
+                        }
+                        else
+                        {
+                            Regex hostAndPortParser = new Regex(pattern2);
+                            host = hostAndPortParser.Match(lastRequest).Groups[1].Value;
+                            port = int.Parse(hostAndPortParser.Match(lastRequest).Groups[2].Value);
+                            wHandler = CreateWebSocket(host, port);
+                        }
+
+                        wHandler.Send(buffer, bytesRead, SocketFlags.None);
+                        wHandler.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveResponses), new object[] { buffer, wHandler, cHandler, 5 });
+
+
+                        byte[] buffernew = new byte[1048576];
+                        cHandler.socket.BeginReceive(buffernew, 0, buffernew.Length, SocketFlags.None, new AsyncCallback(ReceiveRequests), new object[] { buffernew, cHandler });
+                    }
+                }
+                catch (Exception exc)
+                {
+                    lastException = exc.ToString();
+                    OnExceptionThrown();
+                }
+            }
         }
 
         public event WebEvent ConnectionEstablished;
@@ -111,127 +246,6 @@ namespace HttpProxy
         {
             if (ExceptionThrown != null)
                 ExceptionThrown(this);
-        }
-
-        private Socket listener;
-        private List<Socket> clients;
-        private IPAddress localAddress;
-        private string lastRequest;
-        private string lastException;
-        private bool serverRunning;
-
-        private Socket CreateWebSocket(string hostname, int portnumber = 80)
-        {
-            SocketPermission permission = new SocketPermission(NetworkAccess.Connect, TransportType.Tcp, "", SocketPermission.AllPorts);
-            Socket webHandler = new Socket(localAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-
-            permission.Demand();
-            webHandler.Connect(hostname, portnumber);
-            return webHandler;
-        }
-        private void AcceptConnection(IAsyncResult ar)
-        {
-            if (serverRunning)
-            {
-                try
-                {
-                    Socket clientHandler = listener.EndAccept(ar);
-                    clients.Add(clientHandler);
-
-                    OnConnectionEstablished();
-
-                    byte[] buffer = new byte[1048576];
-
-                    clientHandler.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveRequests), new object[] { buffer, clientHandler });
-                    listener.BeginAccept(new AsyncCallback(AcceptConnection), null);
-                }
-                catch (Exception exc)
-                {
-                    lastException = exc.ToString();
-                    OnExceptionThrown();
-                }
-            }          
-        }
-        private void ReceiveResponses(IAsyncResult ar)
-        {
-            if (serverRunning)
-            {
-                try
-                {
-                    byte[] buffer = (byte[])((object[])ar.AsyncState)[0];
-                    Socket wHandler = (Socket)((object[])ar.AsyncState)[1];
-                    Socket cHandler = (Socket)((object[])ar.AsyncState)[2];
-
-                    int bytesRead = wHandler.EndReceive(ar);
-
-                    while (bytesRead > 0 && cHandler.Connected)
-                    {
-                        cHandler.Send(buffer, 0, bytesRead, SocketFlags.None);
-                        bytesRead = wHandler.Receive(buffer);
-                    }
-
-                    OnResponseReceived();
-
-                    wHandler.Shutdown(SocketShutdown.Both);
-                    wHandler.Close();
-                }
-                catch (Exception exc)
-                {
-                    lastException = exc.ToString();
-                    OnExceptionThrown();
-                }
-            }
-        }
-        private void ReceiveRequests(IAsyncResult ar)
-        {
-            if (serverRunning)
-            {
-                try
-                {
-                    byte[] buffer = (byte[])((object[])ar.AsyncState)[0];
-                    Socket cHandler = (Socket)((object[])ar.AsyncState)[1];
-
-                    int bytesRead = cHandler.EndReceive(ar);
-
-                    if (bytesRead > 0)
-                    {
-                        String pattern1 = @"Host: ([^:]*?)\r\n";
-                        String pattern2 = @"Host: (.*?):([\d]{1,5})\r\n";
-                        Regex hostParser = new Regex(pattern1);
-                        Socket wHandler;
-                        String host;
-                        int port;
-
-                        lastRequest = Encoding.ASCII.GetString(buffer, 0, bytesRead);
-                        OnRequestReceived();
-
-                        if (hostParser.IsMatch(lastRequest))
-                        {
-                            host = hostParser.Match(lastRequest).Groups[1].Value;
-                            wHandler = CreateWebSocket(host);
-                        }
-                        else
-                        {
-                            Regex hostAndPortParser = new Regex(pattern2);
-                            host = hostAndPortParser.Match(lastRequest).Groups[1].Value;
-                            port = int.Parse(hostAndPortParser.Match(lastRequest).Groups[2].Value);
-                            wHandler = CreateWebSocket(host, port);
-                        }
-
-                        wHandler.Send(buffer, bytesRead, SocketFlags.None);
-                        wHandler.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveResponses), new object[] { buffer, wHandler, cHandler, 5 });
-
-
-                        byte[] buffernew = new byte[1048576];
-                        cHandler.BeginReceive(buffernew, 0, buffernew.Length, SocketFlags.None, new AsyncCallback(ReceiveRequests), new object[] { buffernew, cHandler });
-                    }
-                }
-                catch (Exception exc)
-                {
-                    lastException = exc.ToString();
-                    OnExceptionThrown();
-                }
-            }
         }
     }
 }
