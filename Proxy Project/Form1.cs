@@ -16,19 +16,25 @@ namespace Proxy_Project
 {
     public partial class Form1 : Form
     {
+        private List<string> exceptions_log;
+        private List<string> requests_log;
         private HttpProxy.WebProxy http_proxy;
-        int numExceptions;
+        private int selectedException;
+        private int selectedRequest;
 
         public Form1()
         {
             InitializeComponent();
             Form1_Resize(null, null);
             IPHostEntry hostInfo = Dns.GetHostEntry("");
+            exceptions_log = new List<string>();
+            requests_log = new List<string>();
+
             http_proxy = new HttpProxy.WebProxy();
             http_proxy.RequestReceived += DisplayRequest;
             http_proxy.ExceptionThrown += DisplayException;
             http_proxy.ConnectionEstablished += DisplayClients;
-            numExceptions = 0;
+            http_proxy.ConnectionEnd += DisplayClients;
 
             var result = from ip in hostInfo.AddressList
                          where ip.AddressFamily == AddressFamily.InterNetwork
@@ -41,9 +47,13 @@ namespace Proxy_Project
         {
             if (this.InvokeRequired)
                 this.Invoke((MethodInvoker)delegate() { DisplayRequest(sender); });
-            
+
             else
-                richTextBox1.Text = sender.LastRequest;
+            {
+                requests_log.Add(sender.LastRequest);
+                richTextBox1.Text = String.Format("Request: {0}\n", requests_log.Count) + sender.LastRequest;
+                selectedRequest = requests_log.Count - 1;
+            }
         }
         private void DisplayException(HttpProxy.WebProxy sender)
         {
@@ -51,7 +61,11 @@ namespace Proxy_Project
                 this.Invoke((MethodInvoker)delegate() { DisplayException(sender); });
 
             else
-                richTextBox2.Text = String.Format("Exceptions: {0}\n", ++numExceptions) + sender.LastException;
+            {
+                exceptions_log.Add(sender.LastException);
+                richTextBox2.Text = String.Format("Exception: {0}\n", exceptions_log.Count) + sender.LastException;
+                selectedException = exceptions_log.Count - 1;
+            }
         }
         private void DisplayClients(HttpProxy.WebProxy sender)
         {
@@ -72,6 +86,15 @@ namespace Proxy_Project
         }
         private void ButtonProxyEnd_Click(object sender, EventArgs e)
         {
+            selectedException = 0;
+            selectedRequest = 0;
+
+            exceptions_log.Clear();
+            requests_log.Clear();
+
+            richTextBox1.Clear();
+            richTextBox2.Clear();
+
             http_proxy.Stop();
 
             ButtonProxyEnd.Enabled = false;
@@ -104,6 +127,35 @@ namespace Proxy_Project
             ButtonProxyEnd.Location = NewLocation;
 
             this.Refresh();
+        }
+
+        private void richTextBox2_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (exceptions_log.Count == 0)
+                return;
+
+            if (e.KeyCode == Keys.Left && selectedException > 0)
+                selectedException--;
+
+            else if (e.KeyCode == Keys.Right && selectedException < exceptions_log.Count-1)
+                selectedException++;
+
+            richTextBox2.Text = String.Format("Exception: {0}\n", selectedException + 1) + exceptions_log[selectedException];
+            richTextBox2.SelectionStart = 0;
+        }
+        private void richTextBox1_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (requests_log.Count == 0)
+                return;
+
+            if (e.KeyCode == Keys.Left && selectedRequest > 0)
+                selectedRequest--;
+
+            else if (e.KeyCode == Keys.Right && selectedRequest < requests_log.Count - 1)
+                selectedRequest++;
+
+            richTextBox1.Text = String.Format("Request: {0}\n", selectedRequest + 1) + requests_log[selectedRequest];
+            richTextBox1.SelectionStart = 0;
         }
     } 
 }

@@ -59,10 +59,12 @@ namespace HttpProxy
 
                     if(handler.socket.Connected)
                         handler.socket.Shutdown(SocketShutdown.Both);
-                    handler.socket.Close(5);
+                    //handler.socket.Close(5);
+                    handler.socket.Dispose();
                 }
 
                 clients.Clear();
+                OnConnectionEnd();
             }
             catch (Exception exc)
             {
@@ -83,11 +85,12 @@ namespace HttpProxy
             get { return clients.Count; }
         }
 
-        struct ExtendedSocket
+        class ExtendedSocket
         {
             public enum SocketState { Open, Closed };
             public Socket socket;
             private SocketState state;
+            public int Workers { get; set; }
             public void State(SocketState s)
             { state = s; }
             public SocketState State()
@@ -153,9 +156,6 @@ namespace HttpProxy
                     }
 
                     OnResponseReceived();
-
-                    wHandler.Shutdown(SocketShutdown.Both);
-                    wHandler.Close();
                 }
                 catch (Exception exc)
                 {
@@ -163,6 +163,13 @@ namespace HttpProxy
                     OnExceptionThrown();
                 }
             }
+
+            wHandler.Shutdown(SocketShutdown.Both);
+            //wHandler.Close();
+            wHandler.Dispose();
+
+            cHandler.Workers--;
+            buffer = null;
         }
         private void ReceiveRequests(IAsyncResult ar)
         {
@@ -200,13 +207,21 @@ namespace HttpProxy
                             wHandler = CreateWebSocket(host, port);
                         }
 
-                        wHandler.Send(buffer, bytesRead, SocketFlags.None);
-                        wHandler.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveResponses), new object[] { buffer, wHandler, cHandler, 5 });
-
-
+                        cHandler.Workers++;
                         byte[] buffernew = new byte[1048576];
-                        cHandler.socket.BeginReceive(buffernew, 0, buffernew.Length, SocketFlags.None, new AsyncCallback(ReceiveRequests), new object[] { buffernew, cHandler });
+
+                        wHandler.Send(buffer, bytesRead, SocketFlags.None);
+                        wHandler.BeginReceive(buffernew, 0, buffernew.Length, SocketFlags.None, new AsyncCallback(ReceiveResponses), new object[] { buffernew, wHandler, cHandler, 5 });
+                        
+                        cHandler.socket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveRequests), new object[] { buffer, cHandler });
+                        return;
                     }
+                    else
+                    {
+                        while (cHandler.Workers != 0)
+                            Thread.Sleep(10);
+                    }
+
                 }
                 catch (Exception exc)
                 {
@@ -214,6 +229,17 @@ namespace HttpProxy
                     OnExceptionThrown();
                 }
             }
+
+            cHandler.State(ExtendedSocket.SocketState.Closed);
+            buffer = null;
+            clients.Remove(cHandler);
+
+            OnConnectionEnd();
+
+            if (cHandler.socket.Connected)
+                cHandler.socket.Shutdown(SocketShutdown.Both);
+            //cHandler.socket.Close(5);
+            cHandler.socket.Dispose();
         }
 
         public event WebEvent ConnectionEstablished;

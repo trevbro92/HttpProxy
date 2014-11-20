@@ -135,6 +135,7 @@
             this.richTextBox1.Size = new System.Drawing.Size(768, 400);
             this.richTextBox1.TabIndex = 5;
             this.richTextBox1.Text = "";
+            this.richTextBox1.KeyDown += new System.Windows.Forms.KeyEventHandler(this.richTextBox1_KeyDown);
             // 
             // richTextBox2
             // 
@@ -146,6 +147,7 @@
             this.richTextBox2.Size = new System.Drawing.Size(768, 400);
             this.richTextBox2.TabIndex = 6;
             this.richTextBox2.Text = "";
+            this.richTextBox2.KeyDown += new System.Windows.Forms.KeyEventHandler(this.richTextBox2_KeyDown);
             // 
             // Form1
             // 
