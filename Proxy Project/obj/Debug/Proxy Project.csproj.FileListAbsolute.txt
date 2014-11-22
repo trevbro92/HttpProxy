@@ -1,0 +1,10 @@
+C:\Users\Brad\Desktop\Networking Project\Proxy Project\bin\Debug\Proxy Project.exe.config
+C:\Users\Brad\Desktop\School\Networking\Networking Project\Proxy Project\bin\Debug\Proxy Project.exe.config
+C:\Users\Brad\Desktop\School\Networking\Networking Project\Proxy Project\bin\Debug\Proxy Project.exe
+C:\Users\Brad\Desktop\School\Networking\Networking Project\Proxy Project\bin\Debug\Proxy Project.pdb
+C:\Users\Brad\Desktop\School\Networking\Networking Project\Proxy Project\obj\Debug\Proxy Project.csprojResolveAssemblyReference.cache
+C:\Users\Brad\Desktop\School\Networking\Networking Project\Proxy Project\obj\Debug\Proxy_Project.Form1.resources
+C:\Users\Brad\Desktop\School\Networking\Networking Project\Proxy Project\obj\Debug\Proxy_Project.Properties.Resources.resources
+C:\Users\Brad\Desktop\School\Networking\Networking Project\Proxy Project\obj\Debug\Proxy Project.csproj.GenerateResource.Cache
+C:\Users\Brad\Desktop\School\Networking\Networking Project\Proxy Project\obj\Debug\Proxy Project.exe
+C:\Users\Brad\Desktop\School\Networking\Networking Project\Proxy Project\obj\Debug\Proxy Project.pdb

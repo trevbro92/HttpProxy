@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Net;
 using System.Net.Sockets;
@@ -21,6 +22,7 @@ namespace Proxy_Project
         private HttpProxy.WebProxy http_proxy;
         private int selectedException;
         private int selectedRequest;
+        int users = 0;
 
         public Form1()
         {
@@ -33,7 +35,12 @@ namespace Proxy_Project
             http_proxy = new HttpProxy.WebProxy();
             http_proxy.RequestReceived += DisplayRequest;
             http_proxy.ExceptionThrown += DisplayException;
-            http_proxy.ConnectionEstablished += DisplayClients;
+            http_proxy.ConnectionEstablished += AddClient; 
+            
+            //http_proxy.WebSocketCreated += AddWebHost;
+            /* RemoveClient is not working yet
+             * http_proxy.ConnectionEnd += RemoveClient;
+             */
             http_proxy.ConnectionEnd += DisplayClients;
 
             var result = from ip in hostInfo.AddressList
@@ -41,12 +48,13 @@ namespace Proxy_Project
                          select ip;
 
             Devices.DataSource = result.Reverse().ToList();
+
         }
 
-        private void DisplayRequest(HttpProxy.WebProxy sender)
+        private void DisplayRequest(HttpProxy.WebProxy sender, object[] s)
         {
             if (this.InvokeRequired)
-                this.Invoke((MethodInvoker)delegate() { DisplayRequest(sender); });
+                this.Invoke((MethodInvoker)delegate() { DisplayRequest(sender, new object[] {}); });
 
             else
             {
@@ -55,10 +63,10 @@ namespace Proxy_Project
                 selectedRequest = requests_log.Count - 1;
             }
         }
-        private void DisplayException(HttpProxy.WebProxy sender)
+        private void DisplayException(HttpProxy.WebProxy sender, object[] s)
         {
             if (this.InvokeRequired)
-                this.Invoke((MethodInvoker)delegate() { DisplayException(sender); });
+                this.Invoke((MethodInvoker)delegate() { DisplayException(sender, new object[] { }); });
 
             else
             {
@@ -67,14 +75,92 @@ namespace Proxy_Project
                 selectedException = exceptions_log.Count - 1;
             }
         }
-        private void DisplayClients(HttpProxy.WebProxy sender)
+
+        /* This should not be needed anymore, ExtendedSocket now keeps a list of WebHosts... but just in case;) */
+        private void AddWebHost(HttpProxy.WebProxy sender, object[] s)
         {
             if (this.InvokeRequired)
-                this.Invoke((MethodInvoker)delegate() { DisplayClients(sender); });
+                this.Invoke((MethodInvoker)delegate() { AddWebHost(sender, s); });
+            else
+            {
+                HttpProxy.ExtendedSocket client = (HttpProxy.ExtendedSocket)s[0];
+                Socket wHost = (Socket)s[1];
 
+                treeView1.BeginUpdate();
+                treeView1.Nodes.Add("Client " + http_proxy.ConnectedClients + ": ");
+            }
+
+        }
+
+        /* Might just do this in WatchClients...but just in case as they say;) */
+        private void AddClient(HttpProxy.WebProxy sender, string id)
+        {
+            if (this.InvokeRequired)
+                this.Invoke((MethodInvoker)delegate() { AddClient(sender, s); });
+            else
+            {
+                this.Text = "HTTP Proxy (" + sender.ConnectedClients.ToString() + ")";
+                bool found = false;
+                
+                string label = @"Client " + users + @": " + id;
+                foreach (TreeNode node in treeView1.Nodes)
+                {
+                    if (node.Text == label)
+                        found = true;
+                }
+                if (!found)
+                {
+                    treeView1.BeginUpdate();
+                    treeView1.Nodes.Add(label);
+                    treeView1.EndUpdate();
+                }
+
+                /* this retrieves a result, not quite sure how to use it though lol
+                 * var result = from TreeNode nodes in treeView1.Nodes
+                                where nodes.Text == label
+                                select nodes;
+                
+                
+                
+                treeView1.BeginUpdate();
+                treeView1.Nodes.Add("Client " + users + ": " + tmp);
+                treeView1.EndUpdate();
+                 treeView1.Nodes[unique_clients].Nodes.Add(client.socket.);
+                treeView1.Nodes[0].Nodes.Add("Child 2");
+                treeView1.Nodes[0].Nodes[1].Nodes.Add("Grandchild");
+                treeView1.Nodes[0].Nodes[1].Nodes[0].Nodes.Add("Great Grandchild");
+                treeView1.EndUpdate(); 
+            }
+                 */
+                    
+            }
+                
+        }
+        
+
+
+        /** Issue: It seems you must iterate through the list of nodes in order to perform any action
+         *         on a specific node :/ eff dat shit
+         */
+        /*private void RemoveClient(HttpProxy.WebProxy sender, object[] s)
+        {
+            if (this.InvokeRequired)
+                this.Invoke((MethodInvoker)delegate() { RemoveClient(sender, s); });
+            else
+            {
+                this.Text = "HTTP Proxy (" + sender.ConnectedClients.ToString() + ")";
+                HttpProxy.WebProxy.ExtendedSocket client = (HttpProxy.WebProxy.ExtendedSocket)s[0];
+                treeView1.BeginUpdate();
+               // treeView1.Nodes.Remove(
+
+        }*/
+       /* private void DisplayClientInfo(HttpProxy.WebProxy sender, object[] s)
+        {
+            if (this.InvokeRequired)
+                this.Invoke((MethodInvoker)delegate() { DisplayClientInfo(sender); });
             else
                 this.Text = "HTTP Proxy (" + sender.ConnectedClients.ToString() + ")";
-        }
+        }*/
 
         private void ButtonProxyStart_Click(object sender, EventArgs e)
         {
@@ -83,6 +169,7 @@ namespace Proxy_Project
             ButtonProxyStart.Enabled = false;
             PropertiesPanel.Enabled = false;
             ButtonProxyEnd.Enabled = true;
+            // Thread stalker = new Thread(http_proxy.)
         }
         private void ButtonProxyEnd_Click(object sender, EventArgs e)
         {
@@ -103,30 +190,15 @@ namespace Proxy_Project
         }
         private void Form1_Resize(object sender, EventArgs e)
         {
-            System.Drawing.Size NewSize = this.ClientSize;
-            System.Drawing.Point NewLocation = richTextBox2.Location;
 
-            NewSize.Width -= 16;
-            NewSize.Height = (NewSize.Height - 100) / 2;
-            NewLocation.Y = NewSize.Height + 16;
+        }
+        private void Form1_Load(object sender, EventArgs e)
+        {
 
-            richTextBox1.ClientSize = NewSize;
-            richTextBox2.ClientSize = NewSize;
-            richTextBox2.Location = NewLocation;
+        }
+        private void listView1_SelectedIndexChanged(object sender, EventArgs e)
+        {
 
-            NewLocation = PropertiesPanel.Location;
-            NewLocation.Y = richTextBox2.Location.Y + NewSize.Height + 8;
-            PropertiesPanel.Location = NewLocation;
-
-            NewLocation = ButtonProxyStart.Location;
-            NewLocation.Y = richTextBox2.Location.Y + NewSize.Height + 8;
-            ButtonProxyStart.Location = NewLocation;
-
-            NewLocation = ButtonProxyEnd.Location;
-            NewLocation.Y = richTextBox2.Location.Y + NewSize.Height + 8;
-            ButtonProxyEnd.Location = NewLocation;
-
-            this.Refresh();
         }
 
         private void richTextBox2_KeyDown(object sender, KeyEventArgs e)

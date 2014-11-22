@@ -37,16 +37,17 @@
             this.PortLabel = new System.Windows.Forms.Label();
             this.richTextBox1 = new System.Windows.Forms.RichTextBox();
             this.richTextBox2 = new System.Windows.Forms.RichTextBox();
+            this.treeView1 = new System.Windows.Forms.TreeView();
             ((System.ComponentModel.ISupportInitialize)(this.PortBox)).BeginInit();
             this.PropertiesPanel.SuspendLayout();
             this.SuspendLayout();
             // 
             // ButtonProxyStart
             // 
-            this.ButtonProxyStart.Location = new System.Drawing.Point(296, 844);
-            this.ButtonProxyStart.Margin = new System.Windows.Forms.Padding(4);
+            this.ButtonProxyStart.Location = new System.Drawing.Point(148, 439);
+            this.ButtonProxyStart.Margin = new System.Windows.Forms.Padding(2);
             this.ButtonProxyStart.Name = "ButtonProxyStart";
-            this.ButtonProxyStart.Size = new System.Drawing.Size(240, 127);
+            this.ButtonProxyStart.Size = new System.Drawing.Size(120, 66);
             this.ButtonProxyStart.TabIndex = 0;
             this.ButtonProxyStart.Text = "Start";
             this.ButtonProxyStart.UseVisualStyleBackColor = true;
@@ -55,10 +56,10 @@
             // ButtonProxyEnd
             // 
             this.ButtonProxyEnd.Enabled = false;
-            this.ButtonProxyEnd.Location = new System.Drawing.Point(544, 844);
-            this.ButtonProxyEnd.Margin = new System.Windows.Forms.Padding(4);
+            this.ButtonProxyEnd.Location = new System.Drawing.Point(272, 439);
+            this.ButtonProxyEnd.Margin = new System.Windows.Forms.Padding(2);
             this.ButtonProxyEnd.Name = "ButtonProxyEnd";
-            this.ButtonProxyEnd.Size = new System.Drawing.Size(240, 127);
+            this.ButtonProxyEnd.Size = new System.Drawing.Size(120, 66);
             this.ButtonProxyEnd.TabIndex = 1;
             this.ButtonProxyEnd.Text = "Terminate";
             this.ButtonProxyEnd.UseVisualStyleBackColor = true;
@@ -66,15 +67,14 @@
             // 
             // PortBox
             // 
-            this.PortBox.Location = new System.Drawing.Point(148, 13);
-            this.PortBox.Margin = new System.Windows.Forms.Padding(6);
+            this.PortBox.Location = new System.Drawing.Point(74, 7);
             this.PortBox.Maximum = new decimal(new int[] {
             65535,
             0,
             0,
             0});
             this.PortBox.Name = "PortBox";
-            this.PortBox.Size = new System.Drawing.Size(106, 31);
+            this.PortBox.Size = new System.Drawing.Size(53, 20);
             this.PortBox.TabIndex = 3;
             this.PortBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.PortBox.Value = new decimal(new int[] {
@@ -90,79 +90,81 @@
             this.PropertiesPanel.Controls.Add(this.Devices);
             this.PropertiesPanel.Controls.Add(this.PortLabel);
             this.PropertiesPanel.Controls.Add(this.PortBox);
-            this.PropertiesPanel.Location = new System.Drawing.Point(16, 844);
-            this.PropertiesPanel.Margin = new System.Windows.Forms.Padding(6);
+            this.PropertiesPanel.Location = new System.Drawing.Point(8, 439);
             this.PropertiesPanel.Name = "PropertiesPanel";
-            this.PropertiesPanel.Size = new System.Drawing.Size(262, 125);
+            this.PropertiesPanel.Size = new System.Drawing.Size(132, 66);
             this.PropertiesPanel.TabIndex = 4;
             // 
             // DeviceLabel
             // 
             this.DeviceLabel.AutoSize = true;
-            this.DeviceLabel.Location = new System.Drawing.Point(6, 69);
-            this.DeviceLabel.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
+            this.DeviceLabel.Location = new System.Drawing.Point(3, 36);
             this.DeviceLabel.Name = "DeviceLabel";
-            this.DeviceLabel.Size = new System.Drawing.Size(37, 25);
+            this.DeviceLabel.Size = new System.Drawing.Size(20, 13);
             this.DeviceLabel.TabIndex = 7;
             this.DeviceLabel.Text = "IP:";
             // 
             // Devices
             // 
             this.Devices.FormattingEnabled = true;
-            this.Devices.Location = new System.Drawing.Point(46, 63);
-            this.Devices.Margin = new System.Windows.Forms.Padding(6);
+            this.Devices.Location = new System.Drawing.Point(23, 33);
             this.Devices.Name = "Devices";
-            this.Devices.Size = new System.Drawing.Size(204, 33);
+            this.Devices.Size = new System.Drawing.Size(104, 21);
             this.Devices.TabIndex = 6;
             // 
             // PortLabel
             // 
             this.PortLabel.AutoSize = true;
-            this.PortLabel.Location = new System.Drawing.Point(6, 17);
-            this.PortLabel.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
+            this.PortLabel.Location = new System.Drawing.Point(3, 9);
             this.PortLabel.Name = "PortLabel";
-            this.PortLabel.Size = new System.Drawing.Size(57, 25);
+            this.PortLabel.Size = new System.Drawing.Size(29, 13);
             this.PortLabel.TabIndex = 5;
             this.PortLabel.Text = "Port:";
             // 
             // richTextBox1
             // 
-            this.richTextBox1.Location = new System.Drawing.Point(16, 16);
-            this.richTextBox1.Margin = new System.Windows.Forms.Padding(6);
+            this.richTextBox1.Location = new System.Drawing.Point(8, 8);
             this.richTextBox1.Name = "richTextBox1";
             this.richTextBox1.ReadOnly = true;
             this.richTextBox1.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.ForcedVertical;
-            this.richTextBox1.Size = new System.Drawing.Size(768, 400);
+            this.richTextBox1.Size = new System.Drawing.Size(386, 210);
             this.richTextBox1.TabIndex = 5;
             this.richTextBox1.Text = "";
             this.richTextBox1.KeyDown += new System.Windows.Forms.KeyEventHandler(this.richTextBox1_KeyDown);
             // 
             // richTextBox2
             // 
-            this.richTextBox2.Location = new System.Drawing.Point(16, 432);
-            this.richTextBox2.Margin = new System.Windows.Forms.Padding(6);
+            this.richTextBox2.Location = new System.Drawing.Point(8, 225);
             this.richTextBox2.Name = "richTextBox2";
             this.richTextBox2.ReadOnly = true;
             this.richTextBox2.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.ForcedVertical;
-            this.richTextBox2.Size = new System.Drawing.Size(768, 400);
+            this.richTextBox2.Size = new System.Drawing.Size(386, 210);
             this.richTextBox2.TabIndex = 6;
             this.richTextBox2.Text = "";
             this.richTextBox2.KeyDown += new System.Windows.Forms.KeyEventHandler(this.richTextBox2_KeyDown);
             // 
+            // treeView1
+            // 
+            this.treeView1.Location = new System.Drawing.Point(467, 40);
+            this.treeView1.Name = "treeView1";
+            this.treeView1.Size = new System.Drawing.Size(294, 178);
+            this.treeView1.TabIndex = 7;
+            // 
             // Form1
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 25F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(806, 989);
+            this.ClientSize = new System.Drawing.Size(908, 577);
+            this.Controls.Add(this.treeView1);
             this.Controls.Add(this.richTextBox2);
             this.Controls.Add(this.richTextBox1);
             this.Controls.Add(this.PropertiesPanel);
             this.Controls.Add(this.ButtonProxyEnd);
             this.Controls.Add(this.ButtonProxyStart);
-            this.Margin = new System.Windows.Forms.Padding(4);
+            this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "Form1";
             this.Text = "HTTP Proxy";
-            this.ResizeEnd += new System.EventHandler(this.Form1_Resize);
+            this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.PortBox)).EndInit();
             this.PropertiesPanel.ResumeLayout(false);
             this.PropertiesPanel.PerformLayout();
@@ -181,6 +183,7 @@
         private System.Windows.Forms.Label DeviceLabel;
         private System.Windows.Forms.RichTextBox richTextBox1;
         private System.Windows.Forms.RichTextBox richTextBox2;
+        private System.Windows.Forms.TreeView treeView1;
 
     }
 }
