@@ -22,7 +22,6 @@ namespace Proxy_Project
         private HttpProxy.WebProxy http_proxy;
         private int selectedException;
         private int selectedRequest;
-        int users = 0;
 
         public Form1()
         {
@@ -33,15 +32,13 @@ namespace Proxy_Project
             requests_log = new List<string>();
 
             http_proxy = new HttpProxy.WebProxy();
+            http_proxy.ConnectionEstablished += AddClient;
+            http_proxy.ClientRemoved += RemoveClient;
+            http_proxy.WebHostRemoved += RemoveWebHost;
             http_proxy.RequestReceived += DisplayRequest;
+            http_proxy.WebSocketCreated += AddWebHost;
             http_proxy.ExceptionThrown += DisplayException;
-            http_proxy.ConnectionEstablished += AddClient; 
-            
-            //http_proxy.WebSocketCreated += AddWebHost;
-            /* RemoveClient is not working yet
-             * http_proxy.ConnectionEnd += RemoveClient;
-             */
-            http_proxy.ConnectionEnd += DisplayClients;
+            //http_proxy.ConnectionEnd += ResetForm;
 
             var result = from ip in hostInfo.AddressList
                          where ip.AddressFamily == AddressFamily.InterNetwork
@@ -76,33 +73,74 @@ namespace Proxy_Project
             }
         }
 
-        /* This should not be needed anymore, ExtendedSocket now keeps a list of WebHosts... but just in case;) */
-        private void AddWebHost(HttpProxy.WebProxy sender, object[] s)
+        private void AddWebHost(HttpProxy.WebProxy sender, object[] info)
         {
             if (this.InvokeRequired)
-                this.Invoke((MethodInvoker)delegate() { AddWebHost(sender, s); });
+                this.Invoke((MethodInvoker)delegate() { AddWebHost(sender, info); });
             else
             {
-                HttpProxy.ExtendedSocket client = (HttpProxy.ExtendedSocket)s[0];
-                Socket wHost = (Socket)s[1];
+                String cid = (String)info[0];
+                Socket wHost = (Socket)info[1];
+                String wid = wHost.RemoteEndPoint.ToString().Split(':')[0];
 
-                treeView1.BeginUpdate();
-                treeView1.Nodes.Add("Client " + http_proxy.ConnectedClients + ": ");
+                
+                foreach (TreeNode node in treeView1.Nodes)
+                {
+                    if(node.Text == cid)
+                    {
+                        treeView1.BeginUpdate();
+                        node.Nodes.Add("Web Server: " +wid);
+                        treeView1.EndUpdate();
+                        break;
+                    }
+                }
+                
             }
 
         }
-
-        /* Might just do this in WatchClients...but just in case as they say;) */
-        private void AddClient(HttpProxy.WebProxy sender, string id)
+        private void RemoveWebHost(HttpProxy.WebProxy sender, object[] info)
         {
             if (this.InvokeRequired)
-                this.Invoke((MethodInvoker)delegate() { AddClient(sender, s); });
+                this.Invoke((MethodInvoker)delegate() { RemoveWebHost(sender, info); });
+            else
+            {
+                String cid = (String)info[0];
+                String wid = (String)info[1];
+
+                foreach (TreeNode client in treeView1.Nodes)
+                {
+                    if (client.Text == cid)
+                    {
+                        foreach(TreeNode host in client.Nodes)
+                        {
+                            if(host.Text == wid)
+                            {
+                                treeView1.BeginUpdate();
+                                host.Nodes.Remove(host);
+                                treeView1.EndUpdate();
+                                return;
+                            }
+                            
+                        }
+                        
+                    }
+                }
+
+
+            }
+
+        }
+        
+        private void AddClient(HttpProxy.WebProxy sender, object[] info)
+        {
+            if (this.InvokeRequired)
+                this.Invoke((MethodInvoker)delegate() { AddClient(sender, info); });
             else
             {
                 this.Text = "HTTP Proxy (" + sender.ConnectedClients.ToString() + ")";
                 bool found = false;
-                
-                string label = @"Client " + users + @": " + id;
+
+                String label = (string)info[0];  
                 foreach (TreeNode node in treeView1.Nodes)
                 {
                     if (node.Text == label)
@@ -114,53 +152,27 @@ namespace Proxy_Project
                     treeView1.Nodes.Add(label);
                     treeView1.EndUpdate();
                 }
-
-                /* this retrieves a result, not quite sure how to use it though lol
-                 * var result = from TreeNode nodes in treeView1.Nodes
-                                where nodes.Text == label
-                                select nodes;
-                
-                
-                
-                treeView1.BeginUpdate();
-                treeView1.Nodes.Add("Client " + users + ": " + tmp);
-                treeView1.EndUpdate();
-                 treeView1.Nodes[unique_clients].Nodes.Add(client.socket.);
-                treeView1.Nodes[0].Nodes.Add("Child 2");
-                treeView1.Nodes[0].Nodes[1].Nodes.Add("Grandchild");
-                treeView1.Nodes[0].Nodes[1].Nodes[0].Nodes.Add("Great Grandchild");
-                treeView1.EndUpdate(); 
-            }
-                 */
                     
             }
                 
         }
-        
-
-
-        /** Issue: It seems you must iterate through the list of nodes in order to perform any action
-         *         on a specific node :/ eff dat shit
-         */
-        /*private void RemoveClient(HttpProxy.WebProxy sender, object[] s)
+        private void RemoveClient(HttpProxy.WebProxy sender, object[] info)
         {
             if (this.InvokeRequired)
-                this.Invoke((MethodInvoker)delegate() { RemoveClient(sender, s); });
+                this.Invoke((MethodInvoker)delegate() { RemoveClient(sender, info); });
             else
             {
                 this.Text = "HTTP Proxy (" + sender.ConnectedClients.ToString() + ")";
-                HttpProxy.WebProxy.ExtendedSocket client = (HttpProxy.WebProxy.ExtendedSocket)s[0];
+                String client_id = (String)info[0];
                 treeView1.BeginUpdate();
-               // treeView1.Nodes.Remove(
+                foreach (TreeNode node in treeView1.Nodes)
+                {
+                    if(node != null && node.Text == client_id)
+                        treeView1.Nodes.Remove(node);
+                }
+            }
 
-        }*/
-       /* private void DisplayClientInfo(HttpProxy.WebProxy sender, object[] s)
-        {
-            if (this.InvokeRequired)
-                this.Invoke((MethodInvoker)delegate() { DisplayClientInfo(sender); });
-            else
-                this.Text = "HTTP Proxy (" + sender.ConnectedClients.ToString() + ")";
-        }*/
+        }
 
         private void ButtonProxyStart_Click(object sender, EventArgs e)
         {
@@ -181,6 +193,9 @@ namespace Proxy_Project
 
             richTextBox1.Clear();
             richTextBox2.Clear();
+
+            foreach (TreeNode node in treeView1.Nodes)
+                treeView1.Nodes.Clear();
 
             http_proxy.Stop();
 

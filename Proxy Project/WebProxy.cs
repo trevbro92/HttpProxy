@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 namespace HttpProxy
 {
-    public delegate void WebEvent(WebProxy sender, string id);
+    public delegate void WebEvent(WebProxy sender, object[] info);
 
     public class ExtendedSocket
     {
@@ -81,19 +81,12 @@ namespace HttpProxy
 
                     if(handler.socket.Connected)
                         handler.socket.Shutdown(SocketShutdown.Both);
-<<<<<<< Updated upstream
-                    //handler.socket.Close(5);
-=======
->>>>>>> Stashed changes
+
                     handler.socket.Dispose();
                 }
 
                 clients.Clear();
-<<<<<<< Updated upstream
-                OnConnectionEnd();
-=======
-                OnConnectionEnd(new ExtendedSocket());
->>>>>>> Stashed changes
+
             }
             catch (Exception exc)
             {
@@ -116,7 +109,6 @@ namespace HttpProxy
         public bool ServerRunning
         { 
             get {return serverRunning; } 
->>>>>>> Stashed changes
         }
 
 
@@ -124,8 +116,9 @@ namespace HttpProxy
         private Socket listener;
         private List<ExtendedSocket> clients;
 
-        /* should store mappings of client string (aka RemoteEndpoint for a given socket) 
-           to the Extendedsocket its contained in  */
+        /* Mappings of client string (aka RemoteEndpoint for a given socket) 
+           to the Extendedsocket its contained in
+         * Currently not being used*/
         public Dictionary<String, ExtendedSocket> client_info;
 
 
@@ -156,8 +149,7 @@ namespace HttpProxy
                     clientHandler.State(ExtendedSocket.SocketState.Open);
                     clients.Add(clientHandler);
                     id = clientHandler.socket.RemoteEndPoint.ToString().Split(':')[0];
-                    client_info.Add(id, clientHandler);
-                    OnConnectionEstablished(id);
+                    OnConnectionEstablished(clientHandler.socket.RemoteEndPoint.ToString());
 
                     byte[] buffer = new byte[1048576];
 
@@ -182,7 +174,6 @@ namespace HttpProxy
                 try
                 {
                     int bytesRead = wHandler.EndReceive(ar);
-                    // && cHandler.State() == ExtendedSocket.SocketState.Open)
                     while (bytesRead > 0 )
                     {
                         cHandler.socket.Send(buffer, 0, bytesRead, SocketFlags.None);
@@ -190,13 +181,13 @@ namespace HttpProxy
                     }
 
                     OnResponseReceived();
-<<<<<<< Updated upstream
-=======
+                    OnWebHostRemoved(cHandler.socket.RemoteEndPoint.ToString(), wHandler.RemoteEndPoint.ToString());
 
                     wHandler.Shutdown(SocketShutdown.Both);
-                    wHandler.Close();
+                    wHandler.Dispose();
                     cHandler.whosts.Remove(wHandler); 
->>>>>>> Stashed changes
+                    buffer = null;
+
                 }
                 catch (Exception exc)
                 {
@@ -204,13 +195,6 @@ namespace HttpProxy
                     OnExceptionThrown();
                 }
             }
-
-            wHandler.Shutdown(SocketShutdown.Both);
-            //wHandler.Close();
-            wHandler.Dispose();
-
-            cHandler.Workers--;
-            buffer = null;
         }
         private void ReceiveRequests(IAsyncResult ar)
         {
@@ -230,6 +214,7 @@ namespace HttpProxy
                         Regex hostParser = new Regex(pattern1);
                         Socket wHandler;
                         String host;
+                        
                         int port;
 
                         lastRequest = Encoding.ASCII.GetString(buffer, 0, bytesRead);
@@ -239,7 +224,7 @@ namespace HttpProxy
                         {
                             host = hostParser.Match(lastRequest).Groups[1].Value;
                             wHandler = CreateWebSocket(host);
-                            OnWebSocketCreated(cHandler, wHandler);
+                            OnWebSocketCreated(cHandler.socket.RemoteEndPoint.ToString(), wHandler);         
                         }
                         else
                         {
@@ -247,10 +232,10 @@ namespace HttpProxy
                             host = hostAndPortParser.Match(lastRequest).Groups[1].Value;
                             port = int.Parse(hostAndPortParser.Match(lastRequest).Groups[2].Value);
                             wHandler = CreateWebSocket(host, port);
-                            OnWebSocketCreated(cHandler, wHandler);
+                            cHandler.whosts.Add(wHandler);
+                            OnWebSocketCreated(cHandler.socket.RemoteEndPoint.ToString(), wHandler);    
                         }
 
-                        cHandler.Workers++;
                         byte[] buffernew = new byte[1048576];
 
                         wHandler.Send(buffer, bytesRead, SocketFlags.None);
@@ -261,28 +246,17 @@ namespace HttpProxy
                     }
                     else
                     {
-                        while (cHandler.Workers != 0)
+                        while (cHandler.whosts.Count != 0)
                             Thread.Sleep(10);
                     }
 
-                        try
-                        {
-                            if ( cHandler.socket.Connected )
-                                cHandler.socket.Shutdown(SocketShutdown.Both);
-                            clients.Remove(cHandler);
-                            cHandler.socket.Dispose();
-                            cHandler = null;
-                            
-
-                            OnConnectionEnd(cHandler);
-                        }
-                        catch (Exception exc)
-                        {
-                            lastException = exc.ToString();
-                            OnExceptionThrown();
-                        }
-                    }
->>>>>>> Stashed changes
+                    OnClientRemoved(cHandler.socket.RemoteEndPoint.ToString());
+                    if ( cHandler.socket.Connected )
+                        cHandler.socket.Shutdown(SocketShutdown.Both);
+                    clients.Remove(cHandler);
+                    cHandler.socket.Dispose();
+                    cHandler = null;
+                    
                 }
                 catch (Exception exc)
                 {
@@ -290,57 +264,56 @@ namespace HttpProxy
                     OnExceptionThrown();
                 }
             }
-
-            cHandler.State(ExtendedSocket.SocketState.Closed);
-            buffer = null;
-            clients.Remove(cHandler);
-
-            OnConnectionEnd();
-
-            if (cHandler.socket.Connected)
-                cHandler.socket.Shutdown(SocketShutdown.Both);
-            //cHandler.socket.Close(5);
-            cHandler.socket.Dispose();
         }
 
+
         public event WebEvent ConnectionEstablished;
-        public event WebEvent ConnectionEnd;
+        // public event WebEvent ConnectionEnd;
+        public event WebEvent ClientRemoved;
+        public event WebEvent WebHostRemoved;
         public event WebEvent RequestReceived;
         public event WebEvent ResponseReceived;
         public event WebEvent ExceptionThrown;
-       // public event WebEvent WebSocketCreated;
+        public event WebEvent WebSocketCreated;
 
-        protected virtual void OnWebSocketCreated(ExtendedSocket client, Socket webhost)
+        protected virtual void OnWebSocketCreated(string client_id, Socket webhost)
         {
-            //if (WebSocketCreated != null)
-           // {
-                client.whosts.Add(webhost);
-                //WebSocketCreated(this, new object[] {client, webhost});
-            //}
+            if (WebSocketCreated != null)
+            {
+                WebSocketCreated(this, new object[] {client_id, webhost});
+            }
                 
         }
-       
-        // This should start a thread in Form1 to keep a watch for new clients. Mmmmm Asynchronous yumminess
         protected virtual void OnConnectionEstablished(string id)
         {
             if (ConnectionEstablished != null)
-                ConnectionEstablished(this, id);
-        }
-        protected virtual void OnConnectionEnd(ExtendedSocket client)
-        {
-            if (ConnectionEnd != null)
-                ConnectionEnd(this,new object[] { client } );
+                ConnectionEstablished(this, new object[] {id});
         }
         protected virtual void OnRequestReceived(string req)
         {
             if (RequestReceived != null)
-                RequestReceived(this,new object[] {req});
+                RequestReceived(this, new object[] { req });
         }
         protected virtual void OnResponseReceived()
         {
             if (ResponseReceived != null)
-                ResponseReceived(this,null);
+                ResponseReceived(this, null);
         }
+        protected virtual void OnClientRemoved(string client_id)
+        {
+            if (ClientRemoved != null)
+                ClientRemoved(this, new object[] {client_id} );
+        }
+        protected virtual void OnWebHostRemoved(string client_id, string web_id)
+        {
+            if (WebHostRemoved != null)
+                WebHostRemoved(this, new object[] {client_id,web_id});
+        }
+       /* protected virtual void OnConnectionEnd()
+        {
+            if (ConnectionEnd != null)
+                ConnectionEnd(this,null);
+        }*/
         protected virtual void OnExceptionThrown()
         {
             if (ExceptionThrown != null)
