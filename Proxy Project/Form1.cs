@@ -34,11 +34,10 @@ namespace Proxy_Project
             http_proxy = new HttpProxy.WebProxy();
             http_proxy.ConnectionEstablished += AddClient;
             http_proxy.ClientRemoved += RemoveClient;
-            http_proxy.WebHostRemoved += RemoveWebHost;
             http_proxy.RequestReceived += DisplayRequest;
             http_proxy.WebSocketCreated += AddWebHost;
             http_proxy.ExceptionThrown += DisplayException;
-            //http_proxy.ConnectionEnd += ResetForm;
+            //http_proxy.WebHostRemoved += RemoveWebHost;
 
             var result = from ip in hostInfo.AddressList
                          where ip.AddressFamily == AddressFamily.InterNetwork
@@ -98,7 +97,7 @@ namespace Proxy_Project
             }
 
         }
-        private void RemoveWebHost(HttpProxy.WebProxy sender, object[] info)
+        /*private void RemoveWebHost(HttpProxy.WebProxy sender, object[] info)
         {
             if (this.InvokeRequired)
                 this.Invoke((MethodInvoker)delegate() { RemoveWebHost(sender, info); });
@@ -129,7 +128,7 @@ namespace Proxy_Project
 
             }
 
-        }
+        }*/
         
         private void AddClient(HttpProxy.WebProxy sender, object[] info)
         {
@@ -163,6 +162,7 @@ namespace Proxy_Project
             else
             {
                 this.Text = "HTTP Proxy (" + sender.ConnectedClients.ToString() + ")";
+                /*
                 String client_id = (String)info[0];
                 treeView1.BeginUpdate();
                 foreach (TreeNode node in treeView1.Nodes)
@@ -170,6 +170,7 @@ namespace Proxy_Project
                     if(node != null && node.Text == client_id)
                         treeView1.Nodes.Remove(node);
                 }
+                 */
             }
 
         }
@@ -194,10 +195,20 @@ namespace Proxy_Project
             richTextBox1.Clear();
             richTextBox2.Clear();
 
+            /* Wanted to reset things but it got too buggy...so instead the treeview will be a client history 
             foreach (TreeNode node in treeView1.Nodes)
-                treeView1.Nodes.Clear();
+            {
+                treeView1.BeginUpdate();
+                node.Nodes.Clear();
+                treeView1.EndUpdate();
+            }
+            treeView1.BeginUpdate();
+            treeView1.Nodes.Clear();
+            treeView1.EndUpdate();
+             */
 
             http_proxy.Stop();
+            this.Text = "HTTP Proxy (" + http_proxy.ConnectedClients.ToString() + ")";
 
             ButtonProxyEnd.Enabled = false;
             ButtonProxyStart.Enabled = true;

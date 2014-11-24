@@ -11,6 +11,8 @@ namespace HttpProxy
 {
     public delegate void WebEvent(WebProxy sender, object[] info);
 
+    /* Adds some extra information to sockets, including a list of connected web sockets and a socket
+       "state" (it being Open, Half Open, or Closed) */
     public class ExtendedSocket
     {
         public ExtendedSocket()
@@ -41,6 +43,7 @@ namespace HttpProxy
 
             serverRunning = false;
         }
+
         public void Start(IPAddress ip, int port)
         {
             try
@@ -56,7 +59,7 @@ namespace HttpProxy
                 listener.Listen(10);
 
                 serverRunning = true;
-                listener.BeginAccept(new AsyncCallback(this.AcceptConnection), null); // listener);
+                listener.BeginAccept(new AsyncCallback(this.AcceptConnection), null); 
             }
             catch (Exception exc)
             {
@@ -67,6 +70,7 @@ namespace HttpProxy
         public void Stop()
         {
             serverRunning = false;
+
             try
             {
                 if (listener.Connected)
@@ -115,12 +119,6 @@ namespace HttpProxy
        
         private Socket listener;
         private List<ExtendedSocket> clients;
-
-        /* Mappings of client string (aka RemoteEndpoint for a given socket) 
-           to the Extendedsocket its contained in
-         * Currently not being used*/
-        public Dictionary<String, ExtendedSocket> client_info;
-
 
         private IPAddress localAddress;
         private string lastRequest;
@@ -181,7 +179,7 @@ namespace HttpProxy
                     }
 
                     OnResponseReceived();
-                    OnWebHostRemoved(cHandler.socket.RemoteEndPoint.ToString(), wHandler.RemoteEndPoint.ToString());
+                    //OnWebHostRemoved(cHandler.socket.RemoteEndPoint.ToString(), wHandler.RemoteEndPoint.ToString());
 
                     wHandler.Shutdown(SocketShutdown.Both);
                     wHandler.Dispose();
@@ -268,13 +266,13 @@ namespace HttpProxy
 
 
         public event WebEvent ConnectionEstablished;
-        // public event WebEvent ConnectionEnd;
         public event WebEvent ClientRemoved;
-        public event WebEvent WebHostRemoved;
         public event WebEvent RequestReceived;
         public event WebEvent ResponseReceived;
         public event WebEvent ExceptionThrown;
         public event WebEvent WebSocketCreated;
+        // public event WebEvent WebHostRemoved;
+        // public event WebEvent ConnectionEnd;
 
         protected virtual void OnWebSocketCreated(string client_id, Socket webhost)
         {
@@ -304,20 +302,21 @@ namespace HttpProxy
             if (ClientRemoved != null)
                 ClientRemoved(this, new object[] {client_id} );
         }
-        protected virtual void OnWebHostRemoved(string client_id, string web_id)
+        protected virtual void OnExceptionThrown()
+        {
+            if (ExceptionThrown != null)
+                ExceptionThrown(this, null);
+        }
+        /*protected virtual void OnWebHostRemoved(string client_id, string web_id)
         {
             if (WebHostRemoved != null)
                 WebHostRemoved(this, new object[] {client_id,web_id});
-        }
-       /* protected virtual void OnConnectionEnd()
+        }*/
+        /* protected virtual void OnConnectionEnd()
         {
             if (ConnectionEnd != null)
                 ConnectionEnd(this,null);
         }*/
-        protected virtual void OnExceptionThrown()
-        {
-            if (ExceptionThrown != null)
-                ExceptionThrown(this,null);
-        }
+        
     }
 }

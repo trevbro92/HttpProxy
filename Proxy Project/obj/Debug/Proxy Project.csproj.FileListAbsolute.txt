@@ -8,11 +8,16 @@ C:\Users\Brad\Desktop\School\Networking\Networking Project\Proxy Project\obj\Deb
 C:\Users\Brad\Desktop\School\Networking\Networking Project\Proxy Project\obj\Debug\Proxy Project.csproj.GenerateResource.Cache
 C:\Users\Brad\Desktop\School\Networking\Networking Project\Proxy Project\obj\Debug\Proxy Project.exe
 C:\Users\Brad\Desktop\School\Networking\Networking Project\Proxy Project\obj\Debug\Proxy Project.pdb
+C:\Users\OWNER\Documents\Networking\Networking Project\Proxy Project\bin\Debug\Proxy Project.exe.config
+C:\Users\OWNER\Documents\Networking\Networking Project\Proxy Project\bin\Debug\Proxy Project.exe.manifest
+C:\Users\OWNER\Documents\Networking\Networking Project\Proxy Project\bin\Debug\Proxy Project.application
+C:\Users\OWNER\Documents\Networking\Networking Project\Proxy Project\bin\Debug\Proxy Project.exe
+C:\Users\OWNER\Documents\Networking\Networking Project\Proxy Project\bin\Debug\Proxy Project.pdb
+C:\Users\OWNER\Documents\Networking\Networking Project\Proxy Project\obj\Debug\Proxy Project.csprojResolveAssemblyReference.cache
 C:\Users\OWNER\Documents\Networking\Networking Project\Proxy Project\obj\Debug\Proxy_Project.Form1.resources
 C:\Users\OWNER\Documents\Networking\Networking Project\Proxy Project\obj\Debug\Proxy_Project.Properties.Resources.resources
 C:\Users\OWNER\Documents\Networking\Networking Project\Proxy Project\obj\Debug\Proxy Project.csproj.GenerateResource.Cache
-C:\Users\OWNER\Documents\Networking\Networking Project\Proxy Project\bin\Debug\Proxy Project.exe.config
-C:\Users\OWNER\Documents\Networking\Networking Project\Proxy Project\bin\Debug\Proxy Project.exe
-C:\Users\OWNER\Documents\Networking\Networking Project\Proxy Project\bin\Debug\Proxy Project.pdb
+C:\Users\OWNER\Documents\Networking\Networking Project\Proxy Project\obj\Debug\Proxy Project.exe.manifest
+C:\Users\OWNER\Documents\Networking\Networking Project\Proxy Project\obj\Debug\Proxy Project.application
 C:\Users\OWNER\Documents\Networking\Networking Project\Proxy Project\obj\Debug\Proxy Project.exe
 C:\Users\OWNER\Documents\Networking\Networking Project\Proxy Project\obj\Debug\Proxy Project.pdb
