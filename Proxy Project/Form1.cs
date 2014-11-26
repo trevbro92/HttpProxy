@@ -32,12 +32,12 @@ namespace Proxy_Project
             requests_log = new List<string>();
 
             http_proxy = new HttpProxy.WebProxy();
-            http_proxy.ConnectionEstablished += AddClient;
-            http_proxy.ClientRemoved += RemoveClient;
+            http_proxy.ClientConnected += AddClient;
+            http_proxy.ClientDisconnected += RemoveClient;
             http_proxy.RequestReceived += DisplayRequest;
-            http_proxy.WebSocketCreated += AddWebHost;
             http_proxy.ExceptionThrown += DisplayException;
-            //http_proxy.WebHostRemoved += RemoveWebHost;
+            http_proxy.WebSocketCreated += AddWebHost;
+            http_proxy.WebSocketRemoved += RemoveWebHost;
 
             var result = from ip in hostInfo.AddressList
                          where ip.AddressFamily == AddressFamily.InterNetwork
@@ -76,101 +76,111 @@ namespace Proxy_Project
         {
             if (this.InvokeRequired)
                 this.Invoke((MethodInvoker)delegate() { AddWebHost(sender, info); });
-            else
+            else try
             {
                 String cid = (String)info[0];
                 Socket wHost = (Socket)info[1];
-                String wid = wHost.RemoteEndPoint.ToString().Split(':')[0];
+                String wid = wHost.RemoteEndPoint.ToString();    
 
-                
-                foreach (TreeNode node in treeView1.Nodes)
+                if (treeView1.Nodes.Find(cid, true)[0].Nodes.Find(wid, true).Length == 0)
                 {
-                    if(node.Text == cid)
-                    {
-                        treeView1.BeginUpdate();
-                        node.Nodes.Add("Web Server: " +wid);
-                        treeView1.EndUpdate();
-                        break;
-                    }
+                    treeView1.BeginUpdate();
+                    treeView1.Nodes.Find(cid, true)[0].Nodes.Add(wid, "Web Socket: " + wid);
+                    treeView1.EndUpdate();
                 }
-                
+                else if (treeView1.Nodes.Find(cid, true)[0].Nodes.Find(wid, true)[0].ForeColor == Color.Red)
+                {
+                    treeView1.Nodes.Find(cid, true)[0].Nodes.Find(wid, true)[0].ForeColor = Color.Black;
+                }
             }
-
+            catch (Exception exc)
+            {
+                treeView1.EndUpdate();
+                exceptions_log.Add(exc.ToString());
+                richTextBox2.Text = String.Format("Exception: {0}\n", exceptions_log.Count) + exc.ToString();
+                selectedException = exceptions_log.Count - 1;
+            }
         }
-        /*private void RemoveWebHost(HttpProxy.WebProxy sender, object[] info)
+        private void RemoveWebHost(HttpProxy.WebProxy sender, object[] info)
         {
             if (this.InvokeRequired)
                 this.Invoke((MethodInvoker)delegate() { RemoveWebHost(sender, info); });
-            else
+            else try
             {
                 String cid = (String)info[0];
                 String wid = (String)info[1];
 
-                foreach (TreeNode client in treeView1.Nodes)
-                {
-                    if (client.Text == cid)
-                    {
-                        foreach(TreeNode host in client.Nodes)
-                        {
-                            if(host.Text == wid)
-                            {
-                                treeView1.BeginUpdate();
-                                host.Nodes.Remove(host);
-                                treeView1.EndUpdate();
-                                return;
-                            }
-                            
-                        }
-                        
-                    }
-                }
+                //treeView1.BeginUpdate();
+                //treeView1.Nodes.Find(cid, true)[0].Nodes.Find(wid, true)[0].Remove();
+                //treeView1.EndUpdate();
 
-
+                treeView1.Nodes.Find(cid, true)[0].Nodes.Find(wid, true)[0].ForeColor = Color.Red;  // "Remove" it
             }
-
-        }*/
+            catch (Exception exc)
+            {
+                treeView1.EndUpdate();
+                exceptions_log.Add(exc.ToString());
+                richTextBox2.Text = String.Format("Exception: {0}\n", exceptions_log.Count) + exc.ToString();
+                selectedException = exceptions_log.Count - 1;
+            }
+        }
         
         private void AddClient(HttpProxy.WebProxy sender, object[] info)
         {
             if (this.InvokeRequired)
                 this.Invoke((MethodInvoker)delegate() { AddClient(sender, info); });
-            else
+            else try
             {
                 this.Text = "HTTP Proxy (" + sender.ConnectedClients.ToString() + ")";
-                bool found = false;
 
-                String label = (string)info[0];  
-                foreach (TreeNode node in treeView1.Nodes)
-                {
-                    if (node.Text == label)
-                        found = true;
-                }
-                if (!found)
+                String cid = (string)info[0];
+
+                if (treeView1.Nodes.Find(cid, true).Length == 0)
                 {
                     treeView1.BeginUpdate();
-                    treeView1.Nodes.Add(label);
+
+                    if (treeView1.Nodes.Find(cid.Split(':')[0], true).Length == 0)
+                        treeView1.Nodes.Add(cid.Split(':')[0], cid.Split(':')[0]).Nodes.Add(cid, "Client socket: " + cid);
+                    else
+                        treeView1.Nodes.Find(cid.Split(':')[0], true)[0].Nodes.Add(cid, "Client socket: " + cid);
+
                     treeView1.EndUpdate();
                 }
-                    
+                else if (treeView1.Nodes.Find(cid, true)[0].ForeColor == Color.Red)
+                {
+                    treeView1.Nodes.Find(cid, true)[0].ForeColor = Color.Black;
+                }
             }
-                
+            catch (Exception exc)
+            {
+                treeView1.EndUpdate();
+                exceptions_log.Add(exc.ToString());
+                richTextBox2.Text = String.Format("Exception: {0}\n", exceptions_log.Count) + exc.ToString();
+                selectedException = exceptions_log.Count - 1;
+            }
         }
         private void RemoveClient(HttpProxy.WebProxy sender, object[] info)
         {
             if (this.InvokeRequired)
                 this.Invoke((MethodInvoker)delegate() { RemoveClient(sender, info); });
-            else
+            else try
             {
                 this.Text = "HTTP Proxy (" + sender.ConnectedClients.ToString() + ")";
-                /*
-                String client_id = (String)info[0];
-                treeView1.BeginUpdate();
-                foreach (TreeNode node in treeView1.Nodes)
-                {
-                    if(node != null && node.Text == client_id)
-                        treeView1.Nodes.Remove(node);
-                }
-                 */
+                
+                String cid = (String)info[0];
+
+                //treeView1.BeginUpdate();
+                //treeView1.Nodes.Find(cid, true)[0].Remove();
+                //treeView1.EndUpdate();       
+
+                treeView1.Nodes.Find(cid, true)[0].ForeColor = Color.Red;
+            }
+            catch (Exception exc)
+            {
+                treeView1.EndUpdate();
+                exceptions_log.Add(exc.ToString());
+                richTextBox2.Text = String.Format("Exception: {0}\n", exceptions_log.Count) + exc.ToString();
+                selectedException = exceptions_log.Count - 1;
             }
 
         }
@@ -195,17 +205,8 @@ namespace Proxy_Project
             richTextBox1.Clear();
             richTextBox2.Clear();
 
-            /* Wanted to reset things but it got too buggy...so instead the treeview will be a client history 
             foreach (TreeNode node in treeView1.Nodes)
-            {
-                treeView1.BeginUpdate();
-                node.Nodes.Clear();
-                treeView1.EndUpdate();
-            }
-            treeView1.BeginUpdate();
-            treeView1.Nodes.Clear();
-            treeView1.EndUpdate();
-             */
+                node.Remove();
 
             http_proxy.Stop();
             this.Text = "HTTP Proxy (" + http_proxy.ConnectedClients.ToString() + ")";
@@ -214,13 +215,43 @@ namespace Proxy_Project
             ButtonProxyStart.Enabled = true;
             PropertiesPanel.Enabled = true;
         }
+
         private void Form1_Resize(object sender, EventArgs e)
         {
+            System.Drawing.Size NewSize = this.ClientSize;
+            System.Drawing.Point NewLocation = richTextBox2.Location;
 
-        }
-        private void Form1_Load(object sender, EventArgs e)
-        {
+            NewSize.Width = (int)(NewSize.Width*.6) - 16;
+            NewSize.Height = (NewSize.Height - 100) / 2;
+            NewLocation.Y = NewSize.Height + 16;
 
+            richTextBox1.ClientSize = NewSize;
+            richTextBox2.ClientSize = NewSize;
+            richTextBox2.Location = NewLocation;
+
+            NewLocation = PropertiesPanel.Location;
+            NewLocation.Y = richTextBox2.Location.Y + NewSize.Height + 8;
+            PropertiesPanel.Location = NewLocation;
+
+            NewLocation = ButtonProxyStart.Location;
+            NewLocation.Y = richTextBox2.Location.Y + NewSize.Height + 8;
+            ButtonProxyStart.Location = NewLocation;
+
+            NewLocation = ButtonProxyEnd.Location;
+            NewLocation.Y = richTextBox2.Location.Y + NewSize.Height + 8;
+            ButtonProxyEnd.Location = NewLocation;
+
+            NewLocation = richTextBox1.Location;
+            NewLocation.X = richTextBox1.Size.Width + 16;
+            NewSize.Width = (int)(this.ClientSize.Width * .4) - 16;
+            if (richTextBox2.Size.Width > 380)
+                NewSize.Height = this.ClientSize.Height - 16;
+            else
+                NewSize.Height = this.ClientSize.Height - PropertiesPanel.Size.Height - 24;
+            treeView1.Location = NewLocation;
+            treeView1.Size = NewSize;
+
+            this.Refresh();
         }
         private void listView1_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -231,12 +262,12 @@ namespace Proxy_Project
         {
             if (exceptions_log.Count == 0)
                 return;
-
             if (e.KeyCode == Keys.Left && selectedException > 0)
                 selectedException--;
-
-            else if (e.KeyCode == Keys.Right && selectedException < exceptions_log.Count-1)
+            else if (e.KeyCode == Keys.Right && selectedException < exceptions_log.Count - 1)
                 selectedException++;
+            else
+                return;
 
             richTextBox2.Text = String.Format("Exception: {0}\n", selectedException + 1) + exceptions_log[selectedException];
             richTextBox2.SelectionStart = 0;
@@ -245,12 +276,12 @@ namespace Proxy_Project
         {
             if (requests_log.Count == 0)
                 return;
-
             if (e.KeyCode == Keys.Left && selectedRequest > 0)
                 selectedRequest--;
-
             else if (e.KeyCode == Keys.Right && selectedRequest < requests_log.Count - 1)
                 selectedRequest++;
+            else
+                return;
 
             richTextBox1.Text = String.Format("Request: {0}\n", selectedRequest + 1) + requests_log[selectedRequest];
             richTextBox1.SelectionStart = 0;

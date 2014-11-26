@@ -20,3 +20,16 @@ C:\Users\OWNER\Documents\Networking\Networking Project\Proxy Project\obj\Release
 C:\Users\OWNER\Documents\Networking\Networking Project\Proxy Project\obj\Release\Proxy Project.csproj.GenerateResource.Cache
 C:\Users\OWNER\Documents\Networking\Networking Project\Proxy Project\obj\Release\Proxy Project.exe.manifest
 C:\Users\OWNER\Documents\Networking\Networking Project\Proxy Project\obj\Release\Proxy Project.application
+C:\Users\Brad\Desktop\HttpProxy-master\Proxy Project\bin\Release\Proxy Project.exe.config
+C:\Users\Brad\Desktop\HttpProxy-master\Proxy Project\bin\Release\Proxy Project.exe.manifest
+C:\Users\Brad\Desktop\HttpProxy-master\Proxy Project\bin\Release\Proxy Project.application
+C:\Users\Brad\Desktop\HttpProxy-master\Proxy Project\bin\Release\Proxy Project.exe
+C:\Users\Brad\Desktop\HttpProxy-master\Proxy Project\bin\Release\Proxy Project.pdb
+C:\Users\Brad\Desktop\HttpProxy-master\Proxy Project\obj\Release\Proxy Project.csprojResolveAssemblyReference.cache
+C:\Users\Brad\Desktop\HttpProxy-master\Proxy Project\obj\Release\Proxy_Project.Form1.resources
+C:\Users\Brad\Desktop\HttpProxy-master\Proxy Project\obj\Release\Proxy_Project.Properties.Resources.resources
+C:\Users\Brad\Desktop\HttpProxy-master\Proxy Project\obj\Release\Proxy Project.csproj.GenerateResource.Cache
+C:\Users\Brad\Desktop\HttpProxy-master\Proxy Project\obj\Release\Proxy Project.exe.manifest
+C:\Users\Brad\Desktop\HttpProxy-master\Proxy Project\obj\Release\Proxy Project.application
+C:\Users\Brad\Desktop\HttpProxy-master\Proxy Project\obj\Release\Proxy Project.exe
+C:\Users\Brad\Desktop\HttpProxy-master\Proxy Project\obj\Release\Proxy Project.pdb
