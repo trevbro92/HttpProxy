@@ -47,3 +47,16 @@ E:\Files\Documents\Dropbox\Public\HttpProxy-master\Proxy Project\obj\Debug\Proxy
 E:\Files\Documents\Dropbox\Public\HttpProxy-master\Proxy Project\obj\Debug\Proxy Project.csproj.GenerateResource.Cache
 E:\Files\Documents\Dropbox\Public\HttpProxy-master\Proxy Project\obj\Debug\Proxy Project.exe.manifest
 E:\Files\Documents\Dropbox\Public\HttpProxy-master\Proxy Project\obj\Debug\Proxy Project.application
+C:\Users\Brad\Desktop\HttpProxy\Proxy Project\bin\Debug\Proxy Project.exe.config
+C:\Users\Brad\Desktop\HttpProxy\Proxy Project\obj\Debug\Proxy Project.exe
+C:\Users\Brad\Desktop\HttpProxy\Proxy Project\obj\Debug\Proxy Project.pdb
+C:\Users\Brad\Desktop\HttpProxy\Proxy Project\bin\Debug\Proxy Project.exe.manifest
+C:\Users\Brad\Desktop\HttpProxy\Proxy Project\bin\Debug\Proxy Project.application
+C:\Users\Brad\Desktop\HttpProxy\Proxy Project\bin\Debug\Proxy Project.exe
+C:\Users\Brad\Desktop\HttpProxy\Proxy Project\bin\Debug\Proxy Project.pdb
+C:\Users\Brad\Desktop\HttpProxy\Proxy Project\obj\Debug\Proxy Project.csprojResolveAssemblyReference.cache
+C:\Users\Brad\Desktop\HttpProxy\Proxy Project\obj\Debug\Proxy_Project.Form1.resources
+C:\Users\Brad\Desktop\HttpProxy\Proxy Project\obj\Debug\Proxy_Project.Properties.Resources.resources
+C:\Users\Brad\Desktop\HttpProxy\Proxy Project\obj\Debug\Proxy Project.csproj.GenerateResource.Cache
+C:\Users\Brad\Desktop\HttpProxy\Proxy Project\obj\Debug\Proxy Project.exe.manifest
+C:\Users\Brad\Desktop\HttpProxy\Proxy Project\obj\Debug\Proxy Project.application
