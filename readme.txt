@@ -1,3 +1,10 @@
+Hey friends! Learn how to log out when using public computers!
+
+
+
+
+
+
 Trevor Broaddus, Brad Wright
 Networking
 Dr. Yi Gu
